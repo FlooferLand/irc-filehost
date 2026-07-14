@@ -1,11 +1,11 @@
-use std::path::Path;
 use actix_web::{HttpRequest, HttpResponse, Responder, http::header, web};
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use bytesize::ByteSize;
+use chrono::{DateTime, Utc};
 use sha2::{Digest, Sha256};
 use tokio::{fs, io::AsyncWriteExt};
 
-use crate::{auth::{get_user_id, check_authorize}, error::{MapServerErrorTrait, ServerError}};
+use crate::{auth::{check_authorize, get_user_id}, error::{MapServerErrorTrait, ServerError}, metadata::Metadata};
 use futures::StreamExt;
 
 /// IRC fileserver information
@@ -30,10 +30,10 @@ pub async fn upload_irc(req: HttpRequest, mut payload: web::Payload) -> Result<H
         let content = content_disposition::parse_content_disposition(str);
         if let Some(filename) = content.filename() {
             name = filename.0;
-            if let Some(path) = filename.1 { ext = path.to_string() }
+            if let Some(path) = filename.1 { ext = path.to_string().to_ascii_lowercase() }
         }
     }
-    println!("User '{user}' is uploading '{Filename}'", Filename = if !ext.is_empty() { format!("{name}.{ext}") } else { name });
+    println!("User '{user}' is uploading '{Filename}'", Filename = if !ext.is_empty() { format!("{name}.{ext}") } else { name.clone() });
     
     // Writing the file
     let temp_path = format!("./media/{}.tmp", hex::encode(rand::random::<[u8; 8]>()));
@@ -58,17 +58,34 @@ pub async fn upload_irc(req: HttpRequest, mut payload: web::Payload) -> Result<H
     }
 
     // Naming the file
-    let final_name = if !ext.is_empty() { format!("{hash}.{ext}") } else { hash };
+    let final_name = if !ext.is_empty() { format!("{hash}.{ext}") } else { hash.clone() };
     let final_path = format!("./media/{}", final_name);
     fs::rename(&temp_path, &final_path).await.server_err()?;
 
+    // Creating a metadata file
+    let size_bytes = fs::metadata(&final_path).await.map(|v| v.len()).unwrap_or(0);
+    let meta_name = format!("{hash}.meta.toml");
+    let meta_path = format!("./media/{}", meta_name);
+    let meta = Metadata {
+        creation: Utc::now(),
+        size_bytes, ext, name
+    };
+    match toml::to_string(&meta) {
+        Ok(str) => {
+            if let Err(err) = fs::write(meta_path, str).await {
+                return Err(ServerError::InternalError { info: format!("Failed to write metadata file: {err}") })
+            }
+        },
+        Err(err) => {
+            return Err(ServerError::InternalError { info: format!("Failed to serialize metadata file: {err}") })
+        },
+    };
+
     // Grabbing and finalizing stuff
-    let size = fs::metadata(final_path).await
-        .map(|v| ByteSize::b(v.len()).display().si().to_string())
-        .unwrap_or("?".to_string());
+    let size_text = ByteSize::b(size_bytes).display().si().to_string();
     let connection = req.connection_info();
-    let location = format!("{}://{}/{}", connection.scheme(), connection.host(), final_name);
-    println!("User '{user}' has uploaded '{final_name}' ({size})\n");
+    let location = format!("{}://{}/{}", connection.scheme(), connection.host(), hash);
+    println!("User '{user}' has uploaded '{final_name}' ({size_text})\n");
     Ok(HttpResponse::Created()
         .insert_header((header::LOCATION, location))
         .finish()

@@ -1,5 +1,5 @@
 use actix_web::{HttpRequest, http::header};
-use tokio::fs::{self, read_to_string};
+use tokio::fs;
 
 const USER_FILE: &str = "./data/users";
 

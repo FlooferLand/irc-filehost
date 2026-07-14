@@ -33,7 +33,7 @@ impl error::ResponseError for ServerError {
     }
 }
 
-// IO error
+// Error trait implementations
 impl From<std::io::Error> for ServerError {
     fn from(value: std::io::Error) -> Self {
         Self::InternalError { info: value.to_string() }
@@ -41,6 +41,11 @@ impl From<std::io::Error> for ServerError {
 }
 impl From<actix_web::error::PayloadError> for ServerError {
     fn from(value: actix_web::error::PayloadError) -> Self {
+        Self::InternalError { info: value.to_string() }
+    }
+}
+impl From<toml::de::Error> for ServerError {
+    fn from(value: toml::de::Error) -> Self {
         Self::InternalError { info: value.to_string() }
     }
 }
