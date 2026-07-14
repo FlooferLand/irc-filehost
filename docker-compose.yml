@@ -1,0 +1,12 @@
+services:
+  filehost:
+    build: ./
+    image: localhost/filehost
+    container_name: filehost
+    ports:
+      - "42967:42967"
+    volumes:
+      - ./data:/app/data
+      - ./media:/app/media
+      - ./src:/app/src
+    working_dir: /app
