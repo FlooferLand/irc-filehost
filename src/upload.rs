@@ -1,7 +1,7 @@
 use actix_web::{HttpRequest, HttpResponse, Responder, http::header, web};
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use bytesize::ByteSize;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use sha2::{Digest, Sha256};
 use tokio::{fs, io::AsyncWriteExt};
 
@@ -12,7 +12,7 @@ use futures::StreamExt;
 pub async fn upload_options() -> impl Responder {
     HttpResponse::NoContent()
         .insert_header(("Allow", "OPTIONS, POST"))
-        .insert_header(("Accept-Post", "image/*, video/*"))
+        .insert_header(("Accept-Post", "*/*"))
         .finish()
 }
 
