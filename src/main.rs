@@ -1,4 +1,4 @@
-use actix_web::{App, HttpResponse, HttpServer, Responder, http::{Method, header::ContentType}, web};
+use actix_web::{App, HttpServer, Responder, http::Method, web};
 
 use crate::template::HtmlTemplate;
 
