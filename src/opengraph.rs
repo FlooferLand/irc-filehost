@@ -27,15 +27,13 @@ pub struct Video {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Image {
     pub url: String,
-    pub mime_type: String,
     pub alt: String
 }
 impl Image {
-    pub fn new(url: &str, alt: &str, mime_type: &Mime) -> Self {
+    pub fn new(url: &str, alt: &str) -> Self {
         Self {
             url: url.to_owned(),
-            alt: alt.to_owned(),
-            mime_type: mime_type.to_string()
+            alt: alt.to_owned()
         }
     }
 }
