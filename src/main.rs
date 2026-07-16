@@ -1,13 +1,16 @@
+#![allow(dead_code)]
+use actix_files::Files;
 use actix_web::{App, HttpServer, Responder, http::Method, web};
-
-use crate::template::HtmlTemplate;
+use crate::templates::{TemplateExtraTrait, index_template::IndexTemplate};
 
 mod error;
 mod auth;
 mod upload;
 mod serve;
 mod metadata;
-mod template;
+mod templates;
+mod opengraph;
+mod extensions;
 
 const PORT: u16 = 42967;
 
@@ -19,7 +22,10 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::method(Method::GET).to(index))
             .route("/upload-irc", web::method(Method::OPTIONS).to(upload::upload_options))
             .route("/upload-irc", web::method(Method::POST).to(upload::upload_irc))
-            .route("/{id}", web::method(Method::GET).to(serve::serve))
+            .service(Files::new("/static", "./static").prefer_utf8(true).show_files_listing())
+            .route("/{id}", web::method(Method::GET).to(serve::serve_default))
+            .route("/{id}/preview", web::method(Method::GET).to(serve::serve_preview))
+            .route("/{id}/raw", web::method(Method::GET).to(serve::serve_raw))
     })
     .bind(("0.0.0.0", PORT))?
     .run()
@@ -27,11 +33,5 @@ async fn main() -> std::io::Result<()> {
 }
 
 async fn index() -> impl Responder {
-    let silly = "flooferlands-file-host-that-is-used-for-irc-and-maybe-other-things-in-the-future";
-    HtmlTemplate::new()
-        .body_line("<p>Welcome to</p>")
-        .body_line(format!("<a href=\"https://github.com/flooferland/irc-filehost\">{silly}</a>"))
-        .body_line("<p>I'd add a directory listing here but that would be a security vulnerability!</p>")
-        .body_line("<img src=\"https://avatars.githubusercontent.com/u/76737186\" alt=\"silly\" />")
-        .build_response()
+    IndexTemplate {}.render_response()
 }

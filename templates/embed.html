@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{title}}</title>
+        <link rel="icon" type="image/x-icon" href="{{icon_url}}">
+
+        <!-- OpenGraph required -->
+        <meta property="og:type" content="{{opengraph_type}}" />
+        <meta property="og:title" content="{{title}}" />
+        <meta property="og:description" content="{{description}}" />
+        <meta property="og:url" content="{{url}}" />
+        <meta property="og:image" content="{{image.url}}" />
+        <meta property="og:image:alt" content="{{image.alt}}" />
+        <meta property="og:icon" content="{{icon_url}}" />
+        <meta property="og:logo" content="{{icon_url}}" />
+        
+        <!-- OpenGraph optional -->
+        {% match content %}
+            {% when Content::Audio(audio) %}
+                <meta property="og:audio" content="{{audio.url}}" />
+                <meta property="og:audio:type" content="{{audio.mime_type}}" />
+                <meta property="music:musician" content="{{audio.musician}}" />
+                {% if let Some(album) = audio.album %}
+                    <meta property="music:album" content="{{album}}" />
+                {% endif %}
+            {% when Content::Image(image) %}
+            {% else %}
+                <!-- Unknown content: {{ content | fmt("{:#?}") }} -->
+        {% endmatch %}
+
+        <!-- Other stuff -->
+        <style>
+            :root {
+                color-scheme: dark light;
+            }
+            html, body {
+                font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+            img {
+                max-width: 100%;
+                max-height: 100%;
+                object-fit: contain;
+            }
+            audio {
+                width: 100%;
+            }
+            a {
+                color: rgb(126, 167, 255);
+            }
+            a:visited {
+                color: rgb(126, 167, 255);
+            }
+            .download-link {
+                padding: 8pt;
+                font-size: large;
+            }
+        </style>
+    </head>
+    <body>
+        {% match content %}
+            {% when Content::Audio(audio) %}
+                <audio controls loop preload="auto" title="{{audio.url}}" src="{{audio.url}}" style="width: 80%"></audio>
+                <p>{{self.download_name()}}</p>
+                <a class="download-link" href="{{audio.url}}" download="{{self.download_name()}}">Download</a>
+            {% when Content::Video(video) %}
+                <video controls preload>
+                    <source src="{{video.url}}" type="{{video.mime_type}}">
+                    Your browser does not support the video tag.
+                </video>
+                <p>{{self.download_name()}}</p>
+                <a class="download-link" href="{{video.url}}" download="{{self.download_name()}}">Download</a>
+            {% when Content::Image(image) %}
+                <img src="{{image.url}}" alt="{{image.alt}}" title="{{image.alt}}" />
+            {% else %}
+                <p>Unknown content:</p>
+                <p>{{ content | fmt("{:#?}") }}</p>
+        {% endmatch %}
+    </body>
+</html>

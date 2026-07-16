@@ -9,4 +9,5 @@ services:
       - ./data:/app/data
       - ./media:/app/media
       - ./src:/app/src
+      - ./templates:/app/templates
     working_dir: /app

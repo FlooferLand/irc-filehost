@@ -21,11 +21,11 @@ pub async fn upload_irc(req: HttpRequest, mut payload: web::Payload) -> Result<H
     if !check_authorize(&req).await {
         return Err(ServerError::Unauthorized);
     }
-    let user = get_user_id(&req).unwrap_or("Unknown".to_string());
+    let user = get_user_id(&req).unwrap_or("Unknown".to_owned());
 
     // Getting file info
-    let mut name = "".to_string();
-    let mut ext = "".to_string();
+    let mut name = String::new();
+    let mut ext = String::new();
     if let Some(Ok(str)) = req.headers().get(header::CONTENT_DISPOSITION).map(|h| h.to_str()) {
         let content = content_disposition::parse_content_disposition(str);
         if let Some(filename) = content.filename() {
@@ -53,7 +53,7 @@ pub async fn upload_irc(req: HttpRequest, mut payload: web::Payload) -> Result<H
     // Updating the extension if there isn't one
     if ext.is_empty() {
         if let Ok(bytes) = fs::read(&temp_path).await.server_err() {
-            ext = infer::get(&bytes).map(|t| t.extension().to_string()).unwrap_or_else(|| "".to_string());
+            ext = infer::get(&bytes).map(|t| t.extension().to_string()).unwrap_or_else(|| "".to_owned());
         }
     }
 
